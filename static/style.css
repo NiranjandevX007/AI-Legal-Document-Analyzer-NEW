@@ -67,7 +67,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 2rem;
     position: relative;
@@ -127,8 +127,7 @@ h1 span {
     border: 1px solid var(--panel-border);
     border-radius: 20px;
     box-shadow: var(--glass-shadow);
-    padding: 2rem;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: box-shadow 0.3s ease;
 }
 
 /* Upload Section */
@@ -136,6 +135,7 @@ h1 span {
     max-width: 600px;
     margin: 0 auto;
     text-align: center;
+    padding: 2rem;
     animation: fadeInUp 0.8s ease-out;
 }
 
@@ -314,127 +314,204 @@ h1 span {
     color: var(--text-secondary);
 }
 
-/* Results Section */
-.results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-}
+/* ==============================================================
+   FULL PAGE APP LAYOUT
+============================================================== */
 
-.summary-card {
+.app-container {
+    width: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border-left: 4px solid var(--primary-color);
-    background: white;
+    animation: fadeIn 0.6s ease;
+    z-index: 2;
+    position: relative;
 }
 
-.summary-card-header {
+/* Top Navigation Bar */
+.app-nav {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    font-weight: 600;
-    font-size: 1.2rem;
-    color: #1e293b;
-    margin-bottom: 0.5rem;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.info-icon {
-    font-size: 1.3rem;
+.app-brand {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.app-brand i {
     color: var(--primary-color);
 }
 
-.summary-text {
-    line-height: 1.6;
-    color: #475569;
-    white-space: pre-wrap; /* For line breaks */
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 2rem;
-}
-
-.chart-container {
+.nav-buttons {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: white;
+    gap: 0.5rem;
+    overflow-x: auto;
 }
 
-.chart-container h3 {
-    margin-bottom: 1rem;
-    align-self: flex-start;
+.nav-btn {
+    padding: 0.8rem 1.2rem;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: #1e293b;
+    white-space: nowrap;
 }
 
-.chart-wrapper img {
-    max-width: 100%;
-    height: auto;
+.nav-btn:hover {
+    background: #f1f5f9;
+    color: var(--text-primary);
 }
 
-.data-container {
+.nav-btn.active {
+    background: #e0e7ff;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Main App Content Area */
+.app-content {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 2rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
 }
 
-.data-card {
-    padding: 1.5rem;
-    background: white;
-}
-
-.card-header {
+/* Metadata Banner */
+.metadata-banner {
     display: flex;
     align-items: center;
     gap: 0.8rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 1.2rem 2rem;
+    margin-bottom: 2rem;
+    background: #f0fdf4; /* Soft green */
+    border-left: 4px solid #22c55e;
+    color: #166534;
+    font-weight: 500;
+    border-radius: 12px;
 }
 
-.card-header h3 {
-    color: #1e293b;
+.metadata-icon {
+    font-size: 1.2rem;
+    color: #22c55e;
 }
 
-.risks .card-header i { color: var(--accent-red); }
-.obligations .card-header i { color: var(--accent-green); }
-.financial .card-header i { color: var(--accent-yellow); }
-.complex-terms .card-header i { color: var(--accent-purple); }
+/* Page Sections */
+.page-section {
+    flex: 1;
+    padding: 3rem;
+    display: none; /* Controlled by JS */
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
 
+.page-section.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.page-title {
+    font-size: 2rem;
+    color: #0f172a;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-title i {
+    color: var(--primary-color);
+}
+
+.content-body {
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+.summary-text {
+    color: #334155;
+    white-space: pre-wrap;
+}
+
+/* Entity Lists */
 .entity-list {
     list-style-position: inside;
     list-style-type: none;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
 }
 
 .entity-list li {
     background: #f8fafc;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 0.8rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
+    padding: 1.5rem;
+    border-radius: 12px;
+    color: #334155;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    border-left: 3px solid transparent;
+    border-left: 5px solid transparent;
     border: 1px solid #f1f5f9;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
 .entity-list li:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    transform: translateX(6px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.05);
 }
 
-.risks .entity-list li { border-left: 3px solid var(--accent-red); }
-.obligations .entity-list li { border-left: 3px solid var(--accent-green); }
-.financial .entity-list li { border-left: 3px solid var(--accent-yellow); }
-.complex-terms .entity-list li { border-left: 3px solid var(--accent-purple); }
+/* Specific Category Styling */
+.complex-style li { border-left-color: var(--accent-purple); }
+.risks-style li { border-left-color: var(--accent-red); }
+.obligations-style li { border-left-color: var(--accent-green); }
+.financial-style li { border-left-color: var(--accent-yellow); }
+
+/* Chart Pane */
+.chart-section {
+    text-align: center;
+}
+
+.chart-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    border: 1px solid #f1f5f9;
+}
+
+.chart-wrapper img {
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+}
 
 /* Utilities */
 .hidden { display: none !important; }
@@ -455,8 +532,36 @@ h1 span {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
+@media (max-width: 992px) {
+    .app-nav {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .nav-buttons {
+        flex-wrap: nowrap;
+        padding-bottom: 0.5rem;
     }
 }
+
+/* Badges for Severity and Categories */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-right: 0.5rem;
+    color: white;
+    vertical-align: middle;
+}
+.badge-high { background-color: #e07a5f; }
+.badge-medium { background-color: #f2cc8f; color: #333333; }
+.badge-low { background-color: #81b29a; }
+.badge-payment, .badge-financial { background-color: #3d405b; }
+.badge-termination, .badge-liability { background-color: #e07a5f; }
+.badge-confidentiality { background-color: #81b29a; }
+.badge-renewal, .badge-ownership { background-color: #f2cc8f; color: #333333; }
+.badge-insurance { background-color: #3d405b; }
+.badge-other { background-color: #94a3b8; }

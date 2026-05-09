@@ -8,10 +8,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import os
 import shutil
-from ai_engine import LegalDocumentAnalyzer
 import warnings
 
 warnings.filterwarnings("ignore")
+
+from ai_engine import LegalDocumentAnalyzer
 
 app = FastAPI(title="AI Legal Document Analyzer")
 
