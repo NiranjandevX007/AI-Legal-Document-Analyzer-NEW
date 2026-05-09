@@ -41,8 +41,8 @@ class LegalDocumentAnalyzer:
         try:
             # Smart sentence-aware chunking
             text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=2000, # Approx 400-500 words
-                chunk_overlap=200,
+                chunk_size=4000, # Approx 600-800 words for much faster processing
+                chunk_overlap=300,
                 length_function=len,
                 is_separator_regex=False,
             )
@@ -92,20 +92,21 @@ class LegalDocumentAnalyzer:
                 f"- Extract ONLY the top 1-3 most critical risks and most important obligations. Ignore minor issues.\n"
                 f"- Extract ONLY 1 or 2 extremely rare, highly complex legal jargon terms per section. If the terms are standard or easily understood by an average adult, you MUST return 'None' for Complex Terms.\n"
                 f"- Classify EVERY risk with a Severity badge like: [High] Risk text, [Medium] Risk text, or [Low] Risk text.\n"
+                f"- Do NOT use [High/Medium/Low] badges for Obligations. Only use them for Risks.\n"
                 f"- Categorize EVERY clause with a Category badge like: [Payment] Clause text, [Termination] Clause text, [Liability] Clause text, or [Insurance] Clause text.\n\n"
-                f"Return EXACTLY in this format:\n\n"
+                f"Return EXACTLY in this format. DO NOT use brackets [] except for Severity and Category badges:\n\n"
                 f"Summary:\n"
-                f"- [Detailed summary]\n\n"
+                f"- <Detailed summary>\n\n"
                 f"Risks:\n"
-                f"- [Severity] [Description of risk]\n\n"
+                f"- [Severity] <Description of risk>\n\n"
                 f"Obligations:\n"
-                f"- [Description of obligation]\n\n"
+                f"- <Description of obligation>\n\n"
                 f"Financial:\n"
-                f"- [Description of financial term]\n\n"
+                f"- <Description of financial term>\n\n"
                 f"Clauses:\n"
-                f"- [Category] [Description of clause]\n\n"
+                f"- [Category] <Description of clause>\n\n"
                 f"Complex Terms Explained:\n"
-                f"- [Term explanation]\n"
+                f"- <Term explanation>\n"
                 f"<|end|>\n"
                 f"<|user|>\n"
                 f"Analyze the following legal text:\n\n"
@@ -115,20 +116,49 @@ class LegalDocumentAnalyzer:
             )
 
             try:
-                res = self.llm(prompt, max_tokens=800, temperature=0.1, stop=["<|end|>"], echo=False)
+                res = self.llm(prompt, max_tokens=600, temperature=0.1, stop=["<|end|>"], echo=False)
                 output_text = res['choices'][0]['text'].strip()
             except Exception as e:
                 print(f"Error during LLM generation for chunk {idx+1}: {e}")
                 output_text = ""
 
             # Robust Parser
+            import re
+            
+            # Force newlines before ANY badge to completely break apart squashed text
+            output_text = re.sub(r'\s*(\[.*?\])', r'\n\1', output_text)
+            
             current_key = None
             for line in output_text.split('\n'):
                 clean_line = line.replace('*', '').strip()
+                if not clean_line: continue
                 line_lower = clean_line.lower()
                 
+                # Indestructible Regex Interceptor for Badged Items
+                if re.search(r'\[.*?\]', line_lower):
+                    if 'risk' in line_lower:
+                        clean_line = re.sub(r'(?i)\bRisks?:?\s*', '', clean_line).strip()
+                        all_risks.append(clean_line)
+                        continue
+                    elif 'obligation' in line_lower:
+                        clean_line = re.sub(r'(?i)\bObligations?:?\s*', '', clean_line).strip()
+                        all_obligations.append(clean_line)
+                        continue
+                    elif 'financial' in line_lower:
+                        clean_line = re.sub(r'(?i)\bFinancials?:?\s*', '', clean_line).strip()
+                        all_financial.append(clean_line)
+                        continue
+                    elif 'clause' in line_lower or any(c in line_lower for c in ['[payment]', '[termination]', '[liability]', '[insurance]']):
+                        clean_line = re.sub(r'(?i)\bClauses?:?\s*', '', clean_line).strip()
+                        all_clauses.append(clean_line)
+                        continue
+
+                # Standard header parsing
                 if line_lower.startswith('summary:'):
                     current_key = 'summary'
+                    text_after = clean_line.split(':', 1)[1].strip()
+                    if text_after and text_after.lower() != 'none':
+                        unordered_summaries[idx] = unordered_summaries.get(idx, "") + text_after + " "
                 elif line_lower.startswith('risks:') or line_lower.startswith('risk:'):
                     current_key = 'risk'
                 elif line_lower.startswith('obligations:') or line_lower.startswith('obligation:'):
@@ -139,7 +169,7 @@ class LegalDocumentAnalyzer:
                     current_key = 'clause'
                 elif line_lower.startswith('complex:') or line_lower.startswith('complex terms'):
                     current_key = 'complex'
-                elif current_key and clean_line and clean_line.lower() not in ['none', 'none.']:
+                elif current_key and clean_line.lower() not in ['none', 'none.']:
                     # Continuation lines (usually bullet points starting with "- ")
                     if clean_line == "-": continue
                     clean_line = clean_line.lstrip('- ').strip()
@@ -160,9 +190,9 @@ class LegalDocumentAnalyzer:
             if i in unordered_summaries and len(unordered_summaries[i]) > 10:
                 raw_summaries.append(unordered_summaries[i])
         
-        # 1. FINAL GLOBAL SUMMARY
-        print("--> Generating Final Global Summary...")
-        final_summary = self._generate_global_summary(" ".join(raw_summaries))
+        # 1. FINAL GLOBAL SUMMARY (Disabled for speed, using simple concatenation)
+        print("--> Stitching together chunk summaries...")
+        final_summary = " ".join(raw_summaries)
         
         # Deduplication
         def remove_dups(seq):
