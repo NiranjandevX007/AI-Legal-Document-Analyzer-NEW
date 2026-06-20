@@ -270,44 +270,4 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadPanel.classList.remove('hidden');
         removeFileBtn.click();
     });
-    const translateBtn = document.getElementById('translate-kn-btn');
-
-if (translateBtn) {
-    translateBtn.addEventListener('click', async () => {
-        const summaryText = document.getElementById('summary-text');
-
-        if (!summaryText || !summaryText.textContent.trim()) {
-            alert("No summary available to translate.");
-            return;
-        }
-
-        translateBtn.disabled = true;
-        translateBtn.textContent = "Translating...";
-
-        try {
-            const response = await fetch('/translate-kannada', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    text: summaryText.textContent
-                })
-            });
-
-            const data = await response.json();
-
-            summaryText.textContent = data.translated_text;
-
-            translateBtn.textContent = "✅ Kannada";
-        } catch (error) {
-            console.error(error);
-            alert("Translation failed.");
-            translateBtn.textContent = "🌐 Translate to Kannada";
-        }
-
-        translateBtn.disabled = false;
-    });
-}
 });
-
