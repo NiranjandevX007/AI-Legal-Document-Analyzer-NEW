@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const newAnalysisBtn = document.getElementById('new-analysis-btn');
 
     let selectedFile = null;
-
+    let englishData = null;
+    let kannadaData = null;
     // Drag and Drop Events
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropZone.addEventListener(eventName, preventDefaults, false);
@@ -90,8 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorData.detail || 'Failed to process document');
             }
 
-            const data = await response.json();
             displayResults(data);
+           const data = await response.json();
+
+           englishData = data;
+
+           displayResults(data);
+
         } catch (error) {
             alert('Error: ' + error.message);
             loadingPanel.classList.add('hidden');
