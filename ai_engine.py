@@ -4,7 +4,7 @@ import base64
 import matplotlib.pyplot as plt
 import pdfplumber
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from llama_cpp import Llama
+import google.generativeai as genai
 
 class LegalDocumentAnalyzer:
     def __init__(self):
@@ -13,17 +13,17 @@ class LegalDocumentAnalyzer:
         
     def _load_model(self):
         if self.llm is None:
-            print("Loading Phi-3-Mini (3.8B Parameters)...")
-            try:
-                self.llm = Llama(
-                    model_path=self.model_path,
-                    n_ctx=4096,
-                    n_threads=10,
-                    verbose=False
-                )
-                print("Model loaded successfully.")
-            except Exception as e:
-                raise Exception(f"Failed to load LLM: {str(e)}")
+            print("Loading Gemini Flash...")
+
+            genai.configure(
+               api_key=os.getenv("GEMINI_API_KEY")
+        )
+
+            self.llm = genai.GenerativeModel(
+                "gemini-2.5-flash"
+        )
+
+            print("Gemini loaded successfully.")
 
     def extract_text(self, file_path):
         text = ""
@@ -116,8 +116,8 @@ class LegalDocumentAnalyzer:
             )
 
             try:
-                res = self.llm(prompt, max_tokens=600, temperature=0.1, stop=["<|end|>"], echo=False)
-                output_text = res['choices'][0]['text'].strip()
+                response=self.llm.generate_content(prompt)
+                output_text = response.text.strip()
             except Exception as e:
                 print(f"Error during LLM generation for chunk {idx+1}: {e}")
                 output_text = ""
@@ -233,8 +233,8 @@ class LegalDocumentAnalyzer:
             f"<|assistant|>\n"
         )
         try:
-            res = self.llm(prompt, max_tokens=1000, temperature=0.2, stop=["<|end|>"], echo=False)
-            return res['choices'][0]['text'].strip()
+            response=self.llm.generate_content(prompt)
+            return response.text.strip()
         except Exception as e:
             print(f"Global summary failed: {e}")
             return raw_text
