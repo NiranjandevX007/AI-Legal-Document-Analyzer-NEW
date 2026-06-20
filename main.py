@@ -6,6 +6,7 @@ os.environ['HF_HUB_DISABLE_CERT_VERIFICATION'] = '1'
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
 import os
 import shutil
 import warnings
@@ -50,8 +51,35 @@ async def upload_document(file: UploadFile = File(...)):
         # Cleanup uploaded file to save space
         if os.path.exists(file_path):
             os.remove(file_path)
+class TranslationRequest(BaseModel):
+    text: str
+
+
+@app.post("/translate-kannada")
+async def translate_kannada(req: TranslationRequest):
+
+    prompt = f"""
+Translate the following legal text into Kannada.
+
+Rules:
+- Keep the legal meaning unchanged.
+- Return only Kannada text.
+- Do not add explanations.
+
+Text:
+{req.text}
+"""
+
+    response = analyzer.llm.generate_content(prompt)
+
+    return {
+        "translated_text": response.text.strip()
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
     print("Starting server on http://localhost:8000")
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+
