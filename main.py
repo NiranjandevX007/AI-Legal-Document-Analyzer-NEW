@@ -10,6 +10,8 @@ from pydantic import BaseModel
 import os
 import shutil
 import warnings
+import json
+import re
 
 warnings.filterwarnings("ignore")
 
@@ -52,29 +54,52 @@ async def upload_document(file: UploadFile = File(...)):
         if os.path.exists(file_path):
             os.remove(file_path)
 class TranslationRequest(BaseModel):
-    text: str
+    summary: str = ""
+    metadata: str = ""
+    complex_terms: list = []
+    risks: list = []
+    obligations: list = []
+    financial_terms: list = []
+    clauses: list = []
 
 
 @app.post("/translate-kannada")
 async def translate_kannada(req: TranslationRequest):
+    analyzer._load_model()
 
-    prompt = f"""
-Translate the following legal text into Kannada.
+    data = {
+        "summary": req.summary,
+        "metadata": req.metadata,
+        "complex_terms": req.complex_terms,
+        "risks": req.risks,
+        "obligations": req.obligations,
+        "financial_terms": req.financial_terms,
+        "clauses": req.clauses,
+    }
+
+    prompt = f"""You are a legal translator. Translate all string values in the following JSON from English to Kannada.
 
 Rules:
-- Keep the legal meaning unchanged.
-- Return only Kannada text.
-- Do not add explanations.
+- Preserve all JSON keys exactly as-is. Do not translate keys.
+- Preserve any badge prefixes in square brackets exactly as English (e.g. [High], [Medium], [Low], [Payment], [Termination], [Liability], [Insurance]) — translate only the text that comes after the badge.
+- Return ONLY valid JSON with the same structure. No markdown fences, no explanations, nothing else.
 
-Text:
-{req.text}
+Input JSON:
+{json.dumps(data, ensure_ascii=False, indent=2)}
 """
 
     response = analyzer.llm.generate_content(prompt)
+    raw = response.text.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```[a-z]*\n?", "", raw)
+        raw = re.sub(r"\n?```$", "", raw)
 
-    return {
-        "translated_text": response.text.strip()
-    }
+    try:
+        translated = json.loads(raw)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Translation parsing failed: {e}")
+
+    return translated
 
 
 if __name__ == "__main__":

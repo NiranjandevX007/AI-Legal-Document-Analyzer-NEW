@@ -11,7 +11,7 @@
 <body>
     <div class="background-orb orb-1"></div>
     <div class="background-orb orb-2"></div>
-
+    
     <!-- INITIAL UPLOAD / LOADING VIEW -->
     <div class="container" id="initial-view">
         <header>
@@ -52,7 +52,7 @@
                     <div class="spinner"></div>
                 </div>
                 <h3>Analyzing Document...</h3>
-                <p>Running Gemini AI Model</p>
+                <p>Running Flan-T5 Large Transformer Model</p>
                 <div class="progress-bar">
                     <div class="progress-fill"></div>
                 </div>
@@ -61,58 +61,41 @@
         </main>
     </div>
 
-    <!-- FULL PAGE APP VIEW (shown after analysis) -->
+    <!-- FULL PAGE APP VIEW (Shown after analysis) -->
     <div class="app-container hidden" id="app-view">
-
+        
         <!-- Top Navigation Bar -->
         <nav class="app-nav glass-panel">
             <div class="app-brand">
                 <i class="fa-solid fa-scale-balanced"></i> LegalLens
             </div>
-
+            
             <div class="nav-buttons">
                 <button class="nav-btn active" data-page="page-summary">
-                    <i class="fa-solid fa-book-open-reader"></i>
-                    <span class="nav-label" data-en="Summary" data-kn="ಸಾರಾಂಶ">Summary</span>
+                    <i class="fa-solid fa-book-open-reader"></i> Summary
                 </button>
                 <button class="nav-btn" data-page="page-complex">
-                    <i class="fa-solid fa-book-journal-whills"></i>
-                    <span class="nav-label" data-en="Complex Terms" data-kn="ಸಂಕೀರ್ಣ ಪದಗಳು">Complex Terms</span>
+                    <i class="fa-solid fa-book-journal-whills"></i> Complex Terms
                 </button>
                 <button class="nav-btn" data-page="page-risks">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span class="nav-label" data-en="Risks" data-kn="ಅಪಾಯಗಳು">Risks</span>
+                    <i class="fa-solid fa-triangle-exclamation"></i> Risks
                 </button>
                 <button class="nav-btn" data-page="page-obligations">
-                    <i class="fa-solid fa-clipboard-check"></i>
-                    <span class="nav-label" data-en="Obligations" data-kn="ಬಾಧ್ಯತೆಗಳು">Obligations</span>
+                    <i class="fa-solid fa-clipboard-check"></i> Obligations
                 </button>
                 <button class="nav-btn" data-page="page-financial">
-                    <i class="fa-solid fa-sack-dollar"></i>
-                    <span class="nav-label" data-en="Financials" data-kn="ಆರ್ಥಿಕ">Financials</span>
+                    <i class="fa-solid fa-sack-dollar"></i> Financials
                 </button>
                 <button class="nav-btn" data-page="page-clauses">
-                    <i class="fa-solid fa-file-contract"></i>
-                    <span class="nav-label" data-en="Clauses" data-kn="ಷರತ್ತುಗಳು">Clauses</span>
+                    <i class="fa-solid fa-file-contract"></i> Clauses
                 </button>
                 <button class="nav-btn" data-page="page-distribution">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <span class="nav-label" data-en="Insights" data-kn="ಒಳನೋಟಗಳು">Insights</span>
+                    <i class="fa-solid fa-chart-pie"></i> Insights
                 </button>
-            </div>
-
-            <div id="lang-toggle">
-                <span id="lang-status" class="lang-status hidden">
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-                    <span class="nav-label" data-en="Translating..." data-kn="Translating...">Translating...</span>
-                </span>
-                <button id="lang-en-btn" class="btn lang-btn lang-active">EN</button>
-                <button id="lang-kn-btn" class="btn lang-btn">ಕನ್ನಡ</button>
             </div>
 
             <button class="btn secondary-btn" id="new-analysis-btn">
-                <i class="fa-solid fa-rotate-right"></i>
-                <span class="nav-label" data-en="New" data-kn="ಹೊಸದು">New</span>
+                <i class="fa-solid fa-rotate-right"></i> New
             </button>
         </nav>
 
@@ -124,109 +107,68 @@
                 <span id="metadata-text">Document processed successfully.</span>
             </div>
 
-            <!-- Page: Summary -->
+            <!-- Full Page Sections -->
             <section class="page-section active glass-panel" id="page-summary">
-                <h2 class="page-title"
-                    data-en="Elaborate Summary (Plain English)"
-                    data-kn="ವಿಸ್ತೃತ ಸಾರಾಂಶ (ಸರಳ ಭಾಷೆಯಲ್ಲಿ)">
-                    <i class="fa-solid fa-book-open-reader"></i>
-                    Elaborate Summary (Plain English)
-                </h2>
+                <h2 class="page-title">Elaborate Summary (Plain English)</h2>
                 <div class="content-body">
                     <p class="summary-text" id="summary-text"></p>
                 </div>
             </section>
-
-            <!-- Page: Complex Terms -->
+            
             <section class="page-section hidden glass-panel" id="page-complex">
-                <h2 class="page-title"
-                    data-en="Complex Terms Explained"
-                    data-kn="ಸಂಕೀರ್ಣ ಪದಗಳ ವಿವರಣೆ">
-                    <i class="fa-solid fa-book-journal-whills"></i>
-                    Complex Terms Explained
-                </h2>
+                <h2 class="page-title">Complex Terms Explained</h2>
                 <div class="content-body">
                     <ul id="complex-list" class="entity-list complex-style"></ul>
                 </div>
             </section>
-
-            <!-- Page: Risks -->
+            
             <section class="page-section hidden glass-panel" id="page-risks">
-                <h2 class="page-title"
-                    data-en="Identified Risks"
-                    data-kn="ಗುರುತಿಸಲಾದ ಅಪಾಯಗಳು">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    Identified Risks
-                </h2>
-
-                <div class="risk-filters" style="margin-bottom:1.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
+                <h2 class="page-title">Identified Risks</h2>
+                
+                <div class="risk-filters" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; justify-content: flex-start;">
                     <button class="btn secondary-btn risk-filter-btn active" data-filter="all">All</button>
-                    <button class="btn secondary-btn risk-filter-btn" data-filter="high"   style="border-color:#e07a5f;color:#e07a5f;">High</button>
-                    <button class="btn secondary-btn risk-filter-btn" data-filter="medium" style="border-color:#f2cc8f;color:#f2cc8f;">Medium</button>
-                    <button class="btn secondary-btn risk-filter-btn" data-filter="low"    style="border-color:#81b29a;color:#81b29a;">Low</button>
+                    <button class="btn secondary-btn risk-filter-btn" data-filter="high" style="border-color: #e07a5f; color: #e07a5f;">High</button>
+                    <button class="btn secondary-btn risk-filter-btn" data-filter="medium" style="border-color: #f2cc8f; color: #f2cc8f;">Medium</button>
+                    <button class="btn secondary-btn risk-filter-btn" data-filter="low" style="border-color: #81b29a; color: #81b29a;">Low</button>
                 </div>
-
+                
                 <div class="content-body">
                     <ul id="risks-list" class="entity-list risks-style"></ul>
                 </div>
             </section>
-
-            <!-- Page: Obligations -->
+            
             <section class="page-section hidden glass-panel" id="page-obligations">
-                <h2 class="page-title"
-                    data-en="Obligations"
-                    data-kn="ಬಾಧ್ಯತೆಗಳು">
-                    <i class="fa-solid fa-clipboard-check"></i>
-                    Obligations
-                </h2>
+                <h2 class="page-title">Obligations</h2>
                 <div class="content-body">
                     <ul id="obligations-list" class="entity-list obligations-style"></ul>
                 </div>
             </section>
-
-            <!-- Page: Financial Terms -->
+            
             <section class="page-section hidden glass-panel" id="page-financial">
-                <h2 class="page-title"
-                    data-en="Financial Terms"
-                    data-kn="ಆರ್ಥಿಕ ನಿಯಮಗಳು">
-                    <i class="fa-solid fa-sack-dollar"></i>
-                    Financial Terms
-                </h2>
+                <h2 class="page-title">Financial Terms</h2>
                 <div class="content-body">
                     <ul id="financial-list" class="entity-list financial-style"></ul>
                 </div>
             </section>
-
-            <!-- Page: Clauses -->
+            
             <section class="page-section hidden glass-panel" id="page-clauses">
-                <h2 class="page-title"
-                    data-en="Categorized Clauses"
-                    data-kn="ವರ್ಗೀಕರಿಸಲಾದ ಷರತ್ತುಗಳು">
-                    <i class="fa-solid fa-file-contract"></i>
-                    Categorized Clauses
-                </h2>
+                <h2 class="page-title">Categorized Clauses</h2>
                 <div class="content-body">
                     <ul id="clauses-list" class="entity-list clauses-style"></ul>
                 </div>
             </section>
-
-            <!-- Page: Insights / Charts -->
+            
             <section class="page-section hidden glass-panel chart-section" id="page-distribution">
-                <h2 class="page-title"
-                    data-en="AI Analytical Insights"
-                    data-kn="AI ವಿಶ್ಲೇಷಣಾ ಒಳನೋಟಗಳು">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    AI Analytical Insights
-                </h2>
+                <h2 class="page-title">AI Analytical Insights</h2>
                 <div class="content-body chart-wrapper">
                     <img id="distribution-chart" src="" alt="Distribution Chart">
-                    <img id="severity-chart"     src="" alt="Severity Chart">
+                    <img id="severity-chart" src="" alt="Severity Chart">
                 </div>
             </section>
 
         </main>
     </div>
-
+    
     <script src="/static/script.js"></script>
 </body>
 </html>

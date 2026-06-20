@@ -565,3 +565,66 @@ h1 span {
 .badge-renewal, .badge-ownership { background-color: #f2cc8f; color: #333333; }
 .badge-insurance { background-color: #3d405b; }
 .badge-other { background-color: #94a3b8; }
+
+/* ── Language toggle ────────────────────────────────────────────────────── */
+#lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 10px;
+}
+
+/* Base lang button — smaller than regular .btn */
+.lang-btn {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: white;
+    color: var(--text-primary);
+    border: 1.5px solid var(--panel-border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: 'Outfit', sans-serif;
+}
+
+.lang-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* Active (current) language */
+.lang-btn.lang-active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Disabled during translation */
+.lang-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* "Translating…" pill */
+.lang-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.3rem 0.75rem;
+    background: #f1f5f9;
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    animation: fadeIn 0.2s ease;
+}
+
+/* Page title icons */
+.page-title i {
+    color: var(--primary-color);
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
