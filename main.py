@@ -165,11 +165,28 @@ RESPONSE GUIDELINES:
 {doc_section}{history_section}
 Current question: {req.message}"""
 
+    _fallback = (
+        "ಈ ಸಮಯದಲ್ಲಿ ಉತ್ತರ ನೀಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಬೇರೆ ರೀತಿಯಲ್ಲಿ ಕೇಳಿ."
+        if is_kannada else
+        "I couldn't generate a response right now. Please try rephrasing your question."
+    )
+
+    answer = _fallback
     try:
         response = analyzer.llm.generate_content(prompt)
-        answer = response.text.strip()
+        # .text raises ValueError when the response was blocked by Gemini's safety filters
+        raw = response.text
+        if raw and raw.strip():
+            answer = raw.strip()
+        else:
+            print(f"[CHAT] Empty response from model (possible content filter). "
+                  f"Message: {req.message[:80]!r}")
+    except ValueError as e:
+        # Gemini blocked the response (finish_reason: SAFETY or RECITATION)
+        print(f"[CHAT] Response blocked by Gemini safety filter: {e}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Chat API call failed: {e}")
+        # Network errors, quota exhaustion, rate limits, model errors, etc.
+        print(f"[CHAT] Generation failed — {type(e).__name__}: {e}")
 
     return {"answer": answer}
 
