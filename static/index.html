@@ -211,16 +211,106 @@
             </section>
 
             <!-- Page: Insights / Charts -->
-            <section class="page-section hidden glass-panel chart-section" id="page-distribution">
+            <section class="page-section hidden glass-panel" id="page-distribution">
                 <h2 class="page-title"
                     data-en="AI Analytical Insights"
                     data-kn="AI ವಿಶ್ಲೇಷಣಾ ಒಳನೋಟಗಳು">
                     <i class="fa-solid fa-chart-pie"></i>
                     AI Analytical Insights
                 </h2>
-                <div class="content-body chart-wrapper">
-                    <img id="distribution-chart" src="" alt="Distribution Chart">
-                    <img id="severity-chart"     src="" alt="Severity Chart">
+
+                <div class="insights-dashboard">
+                    <!-- Legacy img elements kept hidden so displayResults doesn't error -->
+                    <img id="distribution-chart" src="" alt="" style="display:none">
+                    <img id="severity-chart"     src="" alt="" style="display:none">
+
+                    <!-- Row 1: Animated Stat Cards -->
+                    <div class="insights-stats-row">
+                        <div class="stat-card stat-risks">
+                            <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                            <div class="stat-value" id="stat-risks-count">0</div>
+                            <div class="stat-label">Risks</div>
+                        </div>
+                        <div class="stat-card stat-obligations">
+                            <div class="stat-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+                            <div class="stat-value" id="stat-obligations-count">0</div>
+                            <div class="stat-label">Obligations</div>
+                        </div>
+                        <div class="stat-card stat-financial">
+                            <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                            <div class="stat-value" id="stat-financial-count">0</div>
+                            <div class="stat-label">Financial Terms</div>
+                        </div>
+                        <div class="stat-card stat-clauses">
+                            <div class="stat-icon"><i class="fa-solid fa-file-contract"></i></div>
+                            <div class="stat-value" id="stat-clauses-count">0</div>
+                            <div class="stat-label">Clauses</div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Contract Health Score + Risk Donut -->
+                    <div class="insights-row-2">
+                        <div class="insight-card" id="health-score-card">
+                            <div class="insight-card-header">
+                                <i class="fa-solid fa-shield-heart"></i> Contract Health Score
+                            </div>
+                            <div class="health-score-body">
+                                <div class="health-arc-wrapper">
+                                    <svg class="health-arc-svg" viewBox="0 0 120 120">
+                                        <circle class="health-arc-bg" cx="60" cy="60" r="50"
+                                            fill="none" stroke-width="10" stroke-linecap="round"/>
+                                        <circle class="health-arc-fill" id="health-arc-fill" cx="60" cy="60" r="50"
+                                            fill="none" stroke-width="10" stroke-linecap="round"
+                                            transform="rotate(-90 60 60)"/>
+                                    </svg>
+                                    <div class="health-arc-number" id="health-score-number">--</div>
+                                </div>
+                                <div class="health-verdict" id="health-score-label">—</div>
+                                <div class="health-desc" id="health-score-desc"></div>
+                            </div>
+                        </div>
+
+                        <div class="insight-card" id="risk-donut-card">
+                            <div class="insight-card-header">
+                                <i class="fa-solid fa-chart-pie"></i> Risk Distribution
+                            </div>
+                            <div class="donut-body">
+                                <div class="donut-wrapper">
+                                    <svg class="donut-chart" id="risk-donut-svg" viewBox="0 0 160 160">
+                                        <circle class="donut-track" cx="80" cy="80" r="60"
+                                            fill="none" stroke-width="22"/>
+                                    </svg>
+                                    <div class="donut-center-label" id="donut-center-count">0</div>
+                                </div>
+                                <div class="donut-legend" id="donut-legend"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Clause Bar Chart + Document Intelligence -->
+                    <div class="insights-row-2">
+                        <div class="insight-card" id="clause-bar-card">
+                            <div class="insight-card-header">
+                                <i class="fa-solid fa-chart-bar"></i> Clause Categories
+                            </div>
+                            <div class="bar-chart-body" id="clause-bar-body"></div>
+                        </div>
+
+                        <div class="insight-card" id="doc-intelligence-card">
+                            <div class="insight-card-header">
+                                <i class="fa-solid fa-brain"></i> Document Intelligence
+                            </div>
+                            <div class="doc-intel-body" id="doc-intel-body"></div>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: AI Key Insights -->
+                    <div class="insight-card" id="ai-insights-card">
+                        <div class="insight-card-header">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> AI Key Insights
+                        </div>
+                        <div class="ai-insights-grid" id="ai-insights-grid"></div>
+                    </div>
                 </div>
             </section>
 

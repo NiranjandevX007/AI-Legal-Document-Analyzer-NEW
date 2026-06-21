@@ -628,3 +628,281 @@ h1 span {
     font-size: 1.4rem;
     flex-shrink: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   INSIGHTS DASHBOARD
+   ══════════════════════════════════════════════════════════════════ */
+
+.insights-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+/* ── Stat Cards ─────────────────────────────────────────────────── */
+.insights-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.stat-card {
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.85);
+    border-radius: 14px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 14px 14px 0 0;
+}
+
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.09); }
+
+.stat-risks::before       { background: var(--accent-red); }
+.stat-obligations::before { background: var(--primary-color); }
+.stat-financial::before   { background: var(--accent-green); }
+.stat-clauses::before     { background: var(--accent-purple); }
+
+.stat-risks .stat-icon       { color: var(--accent-red); }
+.stat-obligations .stat-icon { color: var(--primary-color); }
+.stat-financial .stat-icon   { color: var(--accent-green); }
+.stat-clauses .stat-icon     { color: var(--accent-purple); }
+
+.stat-icon  { font-size: 1.4rem; margin-bottom: 0.4rem; opacity: 0.8; }
+.stat-value { font-size: 2rem; font-weight: 700; color: var(--text-primary); line-height: 1; margin-bottom: 0.3rem; }
+.stat-label { font-size: 0.72rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ── Two-column grid ────────────────────────────────────────────── */
+.insights-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+
+/* ── Generic insight card ───────────────────────────────────────── */
+.insight-card {
+    background: rgba(255,255,255,0.65);
+    border: 1px solid rgba(255,255,255,0.85);
+    border-radius: 16px;
+    padding: 1.25rem 1.4rem;
+    backdrop-filter: blur(8px);
+}
+
+.insight-card-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* ── Contract Health Score ──────────────────────────────────────── */
+.health-score-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+}
+
+.health-arc-wrapper {
+    position: relative;
+    width: 130px;
+    height: 130px;
+}
+
+.health-arc-svg { width: 100%; height: 100%; }
+
+.health-arc-bg   { stroke: rgba(0,0,0,0.08); }
+.health-arc-fill {
+    stroke-dasharray: 0 314.16;
+    transition: stroke-dasharray 1.2s cubic-bezier(0.4,0,0.2,1);
+}
+
+.health-arc-number {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.health-verdict {
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.health-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 210px;
+    line-height: 1.45;
+}
+
+/* ── Risk Donut Chart ───────────────────────────────────────────── */
+.donut-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.25rem 0;
+}
+
+.donut-wrapper {
+    position: relative;
+    width: 140px;
+    height: 140px;
+}
+
+.donut-chart { width: 100%; height: 100%; }
+.donut-track { stroke: rgba(0,0,0,0.08); }
+
+.donut-center-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.donut-legend {
+    display: flex;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.donut-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* ── Clause Bar Chart ───────────────────────────────────────────── */
+.bar-chart-body { display: flex; flex-direction: column; gap: 0.7rem; }
+
+.bar-row {
+    display: grid;
+    grid-template-columns: 100px 1fr 26px;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.bar-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bar-track {
+    height: 8px;
+    background: rgba(0,0,0,0.07);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 99px;
+    background: var(--bar-color, var(--primary-color));
+    transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+}
+
+.bar-count { font-size: 0.74rem; font-weight: 600; color: var(--text-primary); text-align: center; }
+
+/* ── Document Intelligence ──────────────────────────────────────── */
+.doc-intel-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+}
+
+.doc-intel-item {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.65rem;
+    background: rgba(99,102,241,0.05);
+    border-radius: 10px;
+}
+
+.doc-intel-icon { font-size: 0.95rem; color: var(--primary-color); width: 22px; text-align: center; flex-shrink: 0; }
+.doc-intel-label { font-size: 0.65rem; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.doc-intel-value { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); margin-top: 0.1rem; }
+
+/* ── AI Key Insights ────────────────────────────────────────────── */
+.ai-insights-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+.ai-insight-item {
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+    padding: 0.85rem 1rem;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.75);
+    border-left: 3px solid var(--ins-color, var(--primary-color));
+    border-radius: 10px;
+    animation: insightFadeIn 0.4s ease both;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ai-insight-item:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.07); }
+
+@keyframes insightFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.ai-insight-icon  { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.1rem; }
+.ai-insight-title { font-size: 0.82rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.2rem; line-height: 1.3; }
+.ai-insight-desc  { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.45; }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 992px) {
+    .insights-stats-row  { grid-template-columns: repeat(2, 1fr); }
+    .insights-row-2      { grid-template-columns: 1fr; }
+    .ai-insights-grid    { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+    .ai-insights-grid    { grid-template-columns: 1fr; }
+    .doc-intel-body      { grid-template-columns: 1fr; }
+}

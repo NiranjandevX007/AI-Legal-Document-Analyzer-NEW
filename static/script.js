@@ -145,15 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         applyData(data);
 
-        // Charts — set once, untouched on language switches
+        // Charts — assigned to hidden elements for API compatibility
         document.getElementById('distribution-chart').src = data.chart || '';
-        const sevChart = document.getElementById('severity-chart');
-        if (data.severity_chart) {
-            sevChart.src = data.severity_chart;
-            sevChart.style.display = 'block';
-        } else {
-            sevChart.style.display = 'none';
-        }
+        document.getElementById('severity-chart').src     = data.severity_chart || '';
+
+        // Render insights dashboard from already-loaded data
+        renderInsightsDashboard(data);
 
         // Reset language to EN (new doc always starts in English)
         kannadaData = null;
@@ -328,6 +325,230 @@ document.addEventListener('DOMContentLoaded', () => {
         applyData(englishData);
         applyLanguageLabels('en');
     });
+
+    // ── Insights Dashboard ────────────────────────────────────────────────────
+    function renderInsightsDashboard(data) {
+        const risks       = data.risks           || [];
+        const obligations = data.obligations     || [];
+        const financials  = data.financial_terms || [];
+        const clauses     = data.clauses         || [];
+        const complex     = data.complex_terms   || [];
+        const metadata    = data.metadata        || '';
+
+        function realCount(arr) {
+            return arr.filter(x => x && !/no specific|no items|not identified/i.test(x)).length;
+        }
+
+        const riskCount       = realCount(risks);
+        const obligationCount = realCount(obligations);
+        const financialCount  = realCount(financials);
+        const clauseCount     = realCount(clauses);
+        const complexCount    = realCount(complex);
+
+        // Count-up animation
+        function animateCounter(elId, target) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            const t0 = performance.now();
+            const dur = 900;
+            function tick(now) {
+                const t    = Math.min((now - t0) / dur, 1);
+                const ease = 1 - Math.pow(1 - t, 3);
+                el.textContent = Math.round(ease * target);
+                if (t < 1) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+
+        animateCounter('stat-risks-count',       riskCount);
+        animateCounter('stat-obligations-count', obligationCount);
+        animateCounter('stat-financial-count',   financialCount);
+        animateCounter('stat-clauses-count',     clauseCount);
+
+        // Risk severity counts
+        let highCount = 0, medCount = 0, lowCount = 0;
+        risks.forEach(r => {
+            const rl = r.toLowerCase();
+            if (rl.includes('[high]'))        highCount++;
+            else if (rl.includes('[medium]')) medCount++;
+            else if (rl.includes('[low]'))    lowCount++;
+        });
+
+        // ── Contract Health Score ─────────────────────────────────────
+        const score = Math.max(10, Math.min(100,
+            100 - highCount * 15 - medCount * 7 - lowCount * 3));
+        animateCounter('health-score-number', score);
+
+        let scoreColor, scoreLabel, scoreDesc;
+        if (score >= 80) {
+            scoreColor = '#22c55e'; scoreLabel = 'GOOD';
+            scoreDesc  = 'Low risk profile. Contract appears well-structured.';
+        } else if (score >= 50) {
+            scoreColor = '#f59e0b'; scoreLabel = 'FAIR';
+            scoreDesc  = 'Moderate risk detected. Review flagged clauses carefully.';
+        } else {
+            scoreColor = '#ef4444'; scoreLabel = 'HIGH RISK';
+            scoreDesc  = 'Multiple high-severity risks identified. Legal review recommended.';
+        }
+
+        document.getElementById('health-score-label').textContent = scoreLabel;
+        document.getElementById('health-score-label').style.color = scoreColor;
+        document.getElementById('health-score-desc').textContent  = scoreDesc;
+
+        const arcFill = document.getElementById('health-arc-fill');
+        arcFill.style.stroke = scoreColor;
+        requestAnimationFrame(() => {
+            arcFill.style.strokeDasharray = ((score / 100) * 314.16) + ' 314.16';
+        });
+
+        // ── Risk Donut Chart ──────────────────────────────────────────
+        const donutSvg    = document.getElementById('risk-donut-svg');
+        const donutCenter = document.getElementById('donut-center-count');
+        const donutLegend = document.getElementById('donut-legend');
+        const riskTotal   = highCount + medCount + lowCount;
+        donutCenter.textContent = riskTotal;
+        donutSvg.querySelectorAll('.donut-seg').forEach(s => s.remove());
+
+        if (riskTotal > 0) {
+            const C = 2 * Math.PI * 60;
+            const segs = [
+                { count: highCount, color: '#e07a5f', label: 'High' },
+                { count: medCount,  color: '#f2cc8f', label: 'Medium' },
+                { count: lowCount,  color: '#81b29a', label: 'Low' },
+            ].filter(s => s.count > 0);
+
+            let cum = 0;
+            segs.forEach(seg => {
+                const len = (seg.count / riskTotal) * C;
+                const c   = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                c.setAttribute('class', 'donut-seg');
+                c.setAttribute('cx', '80'); c.setAttribute('cy', '80'); c.setAttribute('r', '60');
+                c.setAttribute('fill', 'none');
+                c.setAttribute('stroke', seg.color); c.setAttribute('stroke-width', '22');
+                c.setAttribute('stroke-dasharray', len + ' ' + (C - len));
+                c.setAttribute('stroke-dashoffset', String(-cum));
+                c.setAttribute('transform', 'rotate(-90 80 80)');
+                donutSvg.appendChild(c);
+                cum += len;
+            });
+
+            donutLegend.innerHTML = '';
+            segs.forEach(seg => {
+                const pct = Math.round((seg.count / riskTotal) * 100);
+                const div = document.createElement('div');
+                div.className = 'donut-legend-item';
+                div.innerHTML = '<span class="donut-dot" style="background:' + seg.color + '"></span>'
+                    + seg.label + ' <strong>' + pct + '%</strong>';
+                donutLegend.appendChild(div);
+            });
+        } else {
+            donutLegend.innerHTML = '<div style="color:#94a3b8;font-style:italic;font-size:0.82rem;text-align:center;">No risks identified.</div>';
+        }
+
+        // ── Clause Category Bar Chart ─────────────────────────────────
+        const barBody = document.getElementById('clause-bar-body');
+        barBody.innerHTML = '';
+
+        const CAT_COLORS = {
+            payment: '#6366f1', termination: '#e07a5f', liability: '#f2cc8f',
+            insurance: '#81b29a', confidentiality: '#3d405b',
+            'room rent': '#06b6d4', 'sub-limit': '#8b5cf6',
+            exclusion: '#f43f5e', 'waiting period': '#f97316', 'co-pay': '#10b981',
+        };
+
+        const catCounts = {};
+        clauses.forEach(c => {
+            if (!c || /no specific|not identified/i.test(c)) return;
+            const m   = c.match(/^\[([^\]]+)\]/);
+            const cat = m ? m[1].toLowerCase() : 'other';
+            catCounts[cat] = (catCounts[cat] || 0) + 1;
+        });
+
+        const sorted  = Object.entries(catCounts).sort((a, b) => b[1] - a[1]);
+        const maxCat  = sorted.length ? sorted[0][1] : 1;
+
+        if (!sorted.length) {
+            barBody.innerHTML = '<div style="color:#94a3b8;font-style:italic;font-size:0.82rem;">No categorized clauses found.</div>';
+        } else {
+            sorted.forEach(([cat, cnt], i) => {
+                const pct   = Math.round((cnt / maxCat) * 100);
+                const color = CAT_COLORS[cat] || '#94a3b8';
+                const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+                const row   = document.createElement('div');
+                row.className = 'bar-row';
+                row.innerHTML = '<div class="bar-label">' + label + '</div>'
+                    + '<div class="bar-track"><div class="bar-fill" style="--bar-color:'
+                    + color + ';transition-delay:' + (i * 0.1) + 's"></div></div>'
+                    + '<div class="bar-count">' + cnt + '</div>';
+                barBody.appendChild(row);
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    const fill = row.querySelector('.bar-fill');
+                    if (fill) fill.style.width = pct + '%';
+                }));
+            });
+        }
+
+        // ── Document Intelligence ─────────────────────────────────────
+        const intelBody = document.getElementById('doc-intel-body');
+        intelBody.innerHTML = '';
+
+        const wcMatch    = metadata.match(/word count:\s*([\d,]+)/i);
+        const wordCount  = wcMatch ? parseInt(wcMatch[1].replace(',', '')) : null;
+        const chkMatch   = metadata.match(/chunks?:\s*(\d+)/i);
+        const chunkCount = chkMatch ? parseInt(chkMatch[1]) : null;
+
+        const totalItems = riskCount + obligationCount + financialCount + clauseCount + complexCount;
+        let complexity, complexColor;
+        if (totalItems > 20)      { complexity = 'High';   complexColor = '#e07a5f'; }
+        else if (totalItems > 10) { complexity = 'Medium'; complexColor = '#f59e0b'; }
+        else                      { complexity = 'Low';    complexColor = '#22c55e'; }
+
+        const readMins = wordCount ? Math.ceil(wordCount / 150) : null;
+
+        [
+            wordCount  ? { icon: 'fa-file-lines',  label: 'Word Count',        value: wordCount.toLocaleString(), color: null }  : null,
+            chunkCount ? { icon: 'fa-layer-group', label: 'Sections Analyzed', value: String(chunkCount),         color: null }  : null,
+            { icon: 'fa-list-check', label: 'Total Findings', value: String(totalItems), color: null         },
+            { icon: 'fa-gauge-high', label: 'Complexity',     value: complexity,          color: complexColor },
+            readMins   ? { icon: 'fa-clock',       label: 'Est. Read Time',    value: '~' + readMins + ' min', color: null }  : null,
+            { icon: 'fa-robot',      label: 'Analyzed By',    value: 'LegalLens AI Engine', color: '#6366f1' },
+        ].filter(Boolean).forEach(m => {
+            const item = document.createElement('div');
+            item.className = 'doc-intel-item';
+            item.innerHTML = '<div class="doc-intel-icon"><i class="fa-solid ' + m.icon + '"></i></div>'
+                + '<div class="doc-intel-info">'
+                + '<div class="doc-intel-label">' + m.label + '</div>'
+                + '<div class="doc-intel-value"' + (m.color ? ' style="color:' + m.color + '"' : '') + '>'
+                + m.value + '</div></div>';
+            intelBody.appendChild(item);
+        });
+
+        // ── AI Key Insights ───────────────────────────────────────────
+        const aiGrid = document.getElementById('ai-insights-grid');
+        aiGrid.innerHTML = '';
+
+        [
+            highCount > 0       ? { icon: 'fa-circle-exclamation', color: '#e07a5f', title: highCount + ' High-Risk Clause' + (highCount > 1 ? 's' : ''),           desc: 'Immediate legal review recommended for these critical items.' } : null,
+            obligationCount > 0 ? { icon: 'fa-clipboard-list',     color: '#6366f1', title: obligationCount + ' Obligation' + (obligationCount > 1 ? 's' : ''),     desc: 'Review all obligations to understand your contractual duties.' } : null,
+            financialCount > 0  ? { icon: 'fa-sack-dollar',        color: '#81b29a', title: financialCount + ' Financial Term' + (financialCount > 1 ? 's' : ''),   desc: 'Financial commitments and payment structures identified.' } : null,
+            clauseCount > 0     ? { icon: 'fa-file-contract',      color: '#3d405b', title: clauseCount + ' Clause' + (clauseCount > 1 ? 's' : '') + ' Categorized', desc: 'Organized by type for efficient review.' } : null,
+            complexCount > 0    ? { icon: 'fa-book-open',          color: '#f59e0b', title: complexCount + ' Complex Term' + (complexCount > 1 ? 's' : ''),         desc: 'Legal jargon requiring specialist understanding.' } : null,
+            { icon: 'fa-shield-halved', color: scoreColor,
+              title: 'Health Score: ' + score + '/100',
+              desc:  'Contract rated ' + scoreLabel.toLowerCase() + ' based on risk analysis.' },
+        ].filter(Boolean).forEach((ins, i) => {
+            const card = document.createElement('div');
+            card.className = 'ai-insight-item';
+            card.style.setProperty('--ins-color', ins.color);
+            card.style.animationDelay = (i * 0.08) + 's';
+            card.innerHTML = '<div class="ai-insight-icon" style="color:' + ins.color + '"><i class="fa-solid ' + ins.icon + '"></i></div>'
+                + '<div class="ai-insight-text">'
+                + '<div class="ai-insight-title">' + ins.title + '</div>'
+                + '<div class="ai-insight-desc">'  + ins.desc  + '</div>'
+                + '</div>';
+            aiGrid.appendChild(card);
+        });
+    }
 
     // ── New Analysis ──────────────────────────────────────────────────────────
     newAnalysisBtn.addEventListener('click', () => {
