@@ -52,7 +52,7 @@
                     <div class="spinner"></div>
                 </div>
                 <h3>Analyzing Document...</h3>
-                <p>Running Gemini AI Model</p>
+                <p>Analyzing with LegalLens AI</p>
                 <div class="progress-bar">
                     <div class="progress-fill"></div>
                 </div>
@@ -133,6 +133,25 @@
                     Elaborate Summary (Plain English)
                 </h2>
                 <div class="content-body">
+                    <!-- Executive summary card — populated by JS after analysis -->
+                    <div id="exec-summary" class="exec-summary hidden">
+                        <div class="exec-rating-row">
+                            <span class="exec-label">Overall Rating</span>
+                            <span id="exec-rating" class="exec-rating-badge">—</span>
+                        </div>
+                        <div class="exec-details">
+                            <div class="exec-detail-item">
+                                <span class="exec-detail-icon"><i class="fa-solid fa-star"></i></span>
+                                <span class="exec-detail-label">Key Strength</span>
+                                <span id="exec-strength" class="exec-detail-value">—</span>
+                            </div>
+                            <div class="exec-detail-item">
+                                <span class="exec-detail-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
+                                <span class="exec-detail-label">Biggest Risk</span>
+                                <span id="exec-risk" class="exec-detail-value">—</span>
+                            </div>
+                        </div>
+                    </div>
                     <p class="summary-text" id="summary-text"></p>
                 </div>
             </section>
@@ -315,6 +334,39 @@
             </section>
 
         </main>
+    </div>
+
+    <!-- LegalLens AI Chatbot -->
+    <button id="chat-toggle-btn" class="chat-toggle-btn" title="Ask about your document">
+        <i class="fa-solid fa-comment-dots"></i>
+    </button>
+
+    <div id="chat-window" class="chat-window">
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+                <div>
+                    <div class="chat-title">LegalLens Assistant</div>
+                    <div class="chat-subtitle">Document Q&amp;A</div>
+                </div>
+            </div>
+            <button id="chat-close-btn" class="chat-close-btn" title="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            <div class="chat-welcome-msg">
+                <i class="fa-solid fa-robot chat-welcome-icon"></i>
+                <p>Hello! Upload a document and I'll answer your questions about it.</p>
+            </div>
+        </div>
+        <div class="chat-input-row">
+            <input type="text" id="chat-input" class="chat-input"
+                placeholder="Ask about the document…" maxlength="500" disabled>
+            <button id="chat-send-btn" class="chat-send-btn" disabled>
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
     </div>
 
     <script src="/static/script.js"></script>

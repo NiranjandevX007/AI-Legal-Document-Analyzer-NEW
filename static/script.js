@@ -16,11 +16,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const langKnBtn     = document.getElementById('lang-kn-btn');
     const langStatus    = document.getElementById('lang-status');
 
+    // ── Chatbot DOM refs ──────────────────────────────────────────────────────
+    const chatToggleBtn = document.getElementById('chat-toggle-btn');
+    const chatWindow    = document.getElementById('chat-window');
+    const chatCloseBtn  = document.getElementById('chat-close-btn');
+    const chatInputEl   = document.getElementById('chat-input');
+    const chatSendBtn   = document.getElementById('chat-send-btn');
+    const chatMessages  = document.getElementById('chat-messages');
+
     // ── State ─────────────────────────────────────────────────────────────────
     let selectedFile  = null;
     let englishData   = null;
     let kannadaData   = null;
     let currentLang   = 'en';   // 'en' | 'kn'
+    let chatHistory   = [];     // [{role, content}] for conversational context
 
     // ── Language label switching ──────────────────────────────────────────────
     /**
@@ -127,11 +136,28 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('metadata-text').textContent = data.metadata;
         }
         document.getElementById('summary-text').textContent = data.summary || '';
+
+        // Executive summary card
+        const execEl = document.getElementById('exec-summary');
+        if (data.executive && (data.executive.rating || data.executive.key_strength)) {
+            execEl.classList.remove('hidden');
+            const rating   = (data.executive.rating || '').trim();
+            const ratingEl = document.getElementById('exec-rating');
+            ratingEl.textContent = rating || '—';
+            ratingEl.className   = 'exec-rating-badge'
+                + (rating ? ' exec-' + rating.toLowerCase().replace(/[^a-z]/g, '') : '');
+            document.getElementById('exec-strength').textContent = data.executive.key_strength || '—';
+            document.getElementById('exec-risk').textContent     = data.executive.biggest_risk  || '—';
+        } else {
+            execEl.classList.add('hidden');
+        }
+
         populateList('complex-list',     data.complex_terms);
         populateList('risks-list',       data.risks);
         populateList('obligations-list', data.obligations);
-        populateList('financial-list',   data.financial_terms);
+        renderFinancialList(data.financial_terms);
         populateList('clauses-list',     data.clauses);
+        applyHighlights(data);
     }
 
     /**
@@ -151,6 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Render insights dashboard from already-loaded data
         renderInsightsDashboard(data);
+
+        // Enable chatbot for the loaded document
+        enableChatbot();
 
         // Reset language to EN (new doc always starts in English)
         kannadaData = null;
@@ -213,6 +242,265 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ul.children.length === 0) {
             ul.innerHTML = '<li style="border-left-color:transparent;color:#94a3b8;font-style:italic;">No items found in this category.</li>';
         }
+    }
+
+    /**
+     * Render financial_terms as structured dashboard cards inside #financial-list.
+     * Expected item format: "Title | Value | One-sentence meaning"
+     * Falls back to plain list rendering if no pipe delimiter is found.
+     */
+    function renderFinancialList(items) {
+        const ul = document.getElementById('financial-list');
+        if (!ul) return;
+        ul.innerHTML = '';
+
+        const valid = (items || []).filter(item =>
+            item && !/^no financial|not identified$/i.test(item.trim())
+        );
+
+        if (!valid.length) {
+            ul.innerHTML = '<li style="border-left-color:transparent;color:#94a3b8;font-style:italic;">No financial terms identified.</li>';
+            return;
+        }
+
+        valid.forEach(raw => {
+            if (!raw || /^\s*none\s*$/i.test(raw)) return;
+
+            const parts  = raw.split('|').map(p => p.replace(/^[\s\-]+/, '').trim());
+            const title  = parts[0] || '';
+            if (!title) return;
+
+            const li = document.createElement('li');
+
+            if (parts.length >= 2) {
+                // Structured card layout
+                li.className = 'fin-card';
+
+                const header = document.createElement('div');
+                header.className = 'fin-card-header';
+
+                const titleEl = document.createElement('span');
+                titleEl.className = 'fin-card-title';
+                titleEl.textContent = title;
+                header.appendChild(titleEl);
+
+                const value = parts[1] || '';
+                if (value && !/^n\/a$/i.test(value)) {
+                    const valEl = document.createElement('span');
+                    valEl.className = 'fin-card-value';
+                    valEl.textContent = value;
+                    header.appendChild(valEl);
+                }
+
+                li.appendChild(header);
+
+                const meaning = parts[2] || '';
+                if (meaning) {
+                    const meanEl = document.createElement('div');
+                    meanEl.className = 'fin-card-meaning';
+                    meanEl.textContent = meaning;
+                    li.appendChild(meanEl);
+                }
+            } else {
+                // Fallback: plain list item (old format or translation edge-case)
+                li.textContent = title;
+            }
+
+            ul.appendChild(li);
+        });
+
+        if (ul.children.length === 0) {
+            ul.innerHTML = '<li style="border-left-color:transparent;color:#94a3b8;font-style:italic;">No financial terms identified.</li>';
+        }
+    }
+
+    // ── Term & Financial Highlighting ──────────────────────────────────────────
+    /**
+     * Parse complex_terms items ("Term: explanation") into a {term: explanation} map.
+     * Falls back to using the whole string as a no-tooltip term when no colon found.
+     */
+    function buildTermMap(complexTerms) {
+        const map = {};
+        (complexTerms || []).forEach(raw => {
+            if (!raw || /no complex|not identified/i.test(raw)) return;
+            const item = raw.replace(/^[\s\-•*]+/, '').trim();
+            const colonIdx = item.indexOf(':');
+            if (colonIdx > 1) {
+                const term = item.slice(0, colonIdx).trim();
+                const explanation = item.slice(colonIdx + 1).trim();
+                if (term.length >= 4 && explanation.length > 3) map[term] = explanation;
+                else if (term.length >= 4) map[term] = '';
+            } else if (item.length >= 4) {
+                map[item] = '';
+            }
+        });
+        return map;
+    }
+
+    /** Walk text nodes inside el; wrap occurrences of termMap keys with .term-chip spans. */
+    function highlightTermsInElement(el, termMap) {
+        const terms = Object.keys(termMap);
+        if (!el || !terms.length) return;
+
+        const sorted  = terms.slice().sort((a, b) => b.length - a.length);
+        const escaped = sorted.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const regex   = new RegExp('(' + escaped.join('|') + ')', 'gi');
+
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+            acceptNode: node => {
+                const p = node.parentElement;
+                if (p.classList.contains('badge') ||
+                    p.classList.contains('term-chip') ||
+                    p.classList.contains('fin-chip'))
+                    return NodeFilter.FILTER_REJECT;
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        });
+
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(textNode => {
+            const txt = textNode.textContent;
+            regex.lastIndex = 0;
+            if (!regex.test(txt)) return;
+            regex.lastIndex = 0;
+
+            const frag = document.createDocumentFragment();
+            let last = 0, m;
+            while ((m = regex.exec(txt)) !== null) {
+                if (m.index > last) frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
+                const canonical = sorted.find(k => k.toLowerCase() === m[0].toLowerCase());
+                const tip = canonical !== undefined ? termMap[canonical] : '';
+                const chip = document.createElement('span');
+                chip.className = 'term-chip';
+                chip.textContent = m[0];
+                if (tip) chip.setAttribute('data-tip', tip);
+                frag.appendChild(chip);
+                last = m.index + m[0].length;
+            }
+            if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
+            textNode.parentNode.replaceChild(frag, textNode);
+        });
+    }
+
+    /**
+     * Highlight specific insurance risk-indicator keywords inside the risks list.
+     * Wraps terms like "waiting period", "co-pay", "exclusion" with .risk-kw chips.
+     * Skips badge spans to avoid double-wrapping severity labels.
+     */
+    function highlightRiskKeywords(el) {
+        if (!el) return;
+        const RISK_TERMS = [
+            'waiting period', 'pre-existing', 'pre existing',
+            'exclusion', 'excluded', 'not covered', 'not payable',
+            'co-pay', 'co-payment', 'copay', 'deductible',
+            'claim rejection', 'claim denied', 'non-disclosure',
+            'coverage cap', 'coverage limit', 'sub-limit', 'sub limit',
+            'premium revision', 'cancellation'
+        ];
+        const escaped  = RISK_TERMS.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const RISK_RE  = new RegExp('\\b(' + escaped.join('|') + ')\\b', 'gi');
+
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+            acceptNode: node => {
+                const p = node.parentElement;
+                if (p.classList.contains('badge')     ||
+                    p.classList.contains('risk-kw')   ||
+                    p.classList.contains('term-chip') ||
+                    p.classList.contains('fin-chip'))
+                    return NodeFilter.FILTER_REJECT;
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        });
+
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(textNode => {
+            const txt = textNode.textContent;
+            RISK_RE.lastIndex = 0;
+            if (!RISK_RE.test(txt)) return;
+            RISK_RE.lastIndex = 0;
+
+            const frag = document.createDocumentFragment();
+            let last = 0, m;
+            while ((m = RISK_RE.exec(txt)) !== null) {
+                if (m.index > last) frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
+                const chip = document.createElement('span');
+                chip.className = 'risk-kw';
+                chip.textContent = m[0];
+                frag.appendChild(chip);
+                last = m.index + m[0].length;
+            }
+            if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
+            textNode.parentNode.replaceChild(frag, textNode);
+        });
+    }
+
+    /**
+     * Highlight monetary amounts, percentages, and time periods inside the clauses list.
+     * Time periods (30 days, 2 years) are relevant for clauses but were intentionally
+     * excluded from the general financial highlighter.
+     */
+    function highlightClauseValues(el) {
+        if (!el) return;
+        const CLAUSE_RE = /(?:(?:₹|Rs\.?\s*|INR\s*|\$\s*)[\d,]+(?:\.\d+)?(?:\s*(?:crores?|lakhs?|thousands?))?)|(?:[\d,]+(?:\.\d+)?\s*%)|(?:\b\d+\s*(?:days?|months?|years?)\b)/gi;
+
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+            acceptNode: node => {
+                const p = node.parentElement;
+                if (p.classList.contains('badge')     ||
+                    p.classList.contains('term-chip') ||
+                    p.classList.contains('fin-chip'))
+                    return NodeFilter.FILTER_REJECT;
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        });
+
+        const nodes = [];
+        let n;
+        while ((n = walker.nextNode())) nodes.push(n);
+
+        nodes.forEach(textNode => {
+            const txt = textNode.textContent;
+            CLAUSE_RE.lastIndex = 0;
+            if (!CLAUSE_RE.test(txt)) return;
+            CLAUSE_RE.lastIndex = 0;
+
+            const frag = document.createDocumentFragment();
+            let last = 0, m;
+            while ((m = CLAUSE_RE.exec(txt)) !== null) {
+                if (m.index > last) frag.appendChild(document.createTextNode(txt.slice(last, m.index)));
+                const chip = document.createElement('span');
+                chip.className = 'fin-chip';
+                chip.textContent = m[0];
+                frag.appendChild(chip);
+                last = m.index + m[0].length;
+            }
+            if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
+            textNode.parentNode.replaceChild(frag, textNode);
+        });
+    }
+
+    /**
+     * Master highlight dispatcher — one section, one concern.
+     *
+     * Summary      → nothing (plain readable text)
+     * Obligations  → nothing (plain readable text)
+     * Financial    → cards handle visual emphasis; no inline chips
+     * Complex Terms→ term-chip tooltips only
+     * Risks        → risk-kw chips for specific risk indicators
+     * Clauses      → fin-chip for monetary values, %, and time periods
+     * Insights     → dashboard visuals only, no inline chips
+     */
+    function applyHighlights(data) {
+        const termMap = buildTermMap(data.complex_terms);
+        highlightTermsInElement(document.getElementById('complex-list'), termMap);
+        highlightRiskKeywords(document.getElementById('risks-list'));
+        highlightClauseValues(document.getElementById('clauses-list'));
     }
 
     // ── Risk filter buttons ───────────────────────────────────────────────────
@@ -298,6 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     obligations:    englishData.obligations    || [],
                     financial_terms:englishData.financial_terms|| [],
                     clauses:        englishData.clauses        || [],
+                    executive:      englishData.executive      || {},
                 })
             });
 
@@ -550,8 +839,104 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ── Chatbot ───────────────────────────────────────────────────────────────
+    function enableChatbot() {
+        chatToggleBtn.classList.add('chat-btn-visible');
+        chatInputEl.disabled  = false;
+        chatSendBtn.disabled  = false;
+        chatMessages.innerHTML =
+            '<div class="chat-welcome-msg">'
+            + '<i class="fa-solid fa-robot chat-welcome-icon"></i>'
+            + '<p>Document analyzed! Ask me anything about its contents.</p>'
+            + '</div>';
+    }
+
+    function disableChatbot() {
+        chatHistory = [];
+        chatToggleBtn.classList.remove('chat-btn-visible');
+        chatWindow.classList.remove('chat-open');
+        chatInputEl.disabled  = true;
+        chatSendBtn.disabled  = true;
+        chatMessages.innerHTML =
+            '<div class="chat-welcome-msg">'
+            + '<i class="fa-solid fa-robot chat-welcome-icon"></i>'
+            + '<p>Hello! Upload a document and I\'ll answer your questions about it.</p>'
+            + '</div>';
+    }
+
+    chatToggleBtn.addEventListener('click', () => {
+        chatWindow.classList.toggle('chat-open');
+        if (chatWindow.classList.contains('chat-open')) chatInputEl.focus();
+    });
+
+    chatCloseBtn.addEventListener('click', () => chatWindow.classList.remove('chat-open'));
+
+    chatSendBtn.addEventListener('click', sendChatMessage);
+    chatInputEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+    });
+
+    async function sendChatMessage() {
+        const msg = chatInputEl.value.trim();
+        if (!msg || chatInputEl.disabled) return;
+
+        chatInputEl.value    = '';
+        chatInputEl.disabled = true;
+        chatSendBtn.disabled = true;
+
+        const historySnapshot = chatHistory.slice(-10); // snapshot before adding user msg
+        appendChatBubble('user', msg);
+        const typingEl = appendTypingDots();
+
+        try {
+            const res = await fetch('/chat', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ message: msg, history: historySnapshot }),
+            });
+            typingEl.remove();
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                appendChatBubble('bot', err.detail || 'Something went wrong. Please try again.');
+            } else {
+                const data = await res.json();
+                appendChatBubble('bot', data.answer);
+            }
+        } catch (e) {
+            typingEl.remove();
+            appendChatBubble('bot', 'Network error. Please check your connection and try again.');
+        } finally {
+            chatInputEl.disabled = false;
+            chatSendBtn.disabled = false;
+            chatInputEl.focus();
+        }
+    }
+
+    function appendChatBubble(role, text) {
+        const wrap   = document.createElement('div');
+        wrap.className = 'chat-message chat-' + role;
+        const bubble = document.createElement('div');
+        bubble.className  = 'chat-bubble';
+        bubble.textContent = text;       // textContent safely escapes HTML
+        wrap.appendChild(bubble);
+        chatMessages.appendChild(wrap);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        chatHistory.push({ role: role === 'user' ? 'user' : 'assistant', content: text });
+    }
+
+    function appendTypingDots() {
+        const wrap = document.createElement('div');
+        wrap.className = 'chat-message chat-bot';
+        wrap.innerHTML = '<div class="chat-bubble chat-typing"><span></span><span></span><span></span></div>';
+        chatMessages.appendChild(wrap);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return wrap;
+    }
+
     // ── New Analysis ──────────────────────────────────────────────────────────
     newAnalysisBtn.addEventListener('click', () => {
+        disableChatbot();
+
         // Reset state
         englishData = null;
         kannadaData = null;
